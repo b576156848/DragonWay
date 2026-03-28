@@ -1,0 +1,13 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+
+backend/.env
+backend/.env.local
+backend/data/*.db
+backend/data/*.sqlite
+backend/data/*.sqlite3
+
+frontend/node_modules/
+frontend/dist/
+tmp/

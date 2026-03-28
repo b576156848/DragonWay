@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import re
+import threading
+import time
 import urllib.parse
 import urllib.request
 from html import unescape
 from typing import Any
 
+from backend.app.config import SCRAPER_CACHE_TTL_SECONDS
 from backend.app.schemas.campaign import ProductData
 
 
@@ -169,9 +172,18 @@ def _extract_offer_price(offers: Any) -> tuple[str | None, str | None]:
 
 
 class ProductScraper:
+    _cache_lock = threading.Lock()
+    _cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
     def scrape(self, source: str) -> ProductData:
         if source.startswith("http://") or source.startswith("https://"):
-            return self._scrape_url(source)
+            cached = self._read_cache(source)
+            if cached is not None:
+                return cached
+
+            product = self._scrape_url(source)
+            self._write_cache(source, product)
+            return product
         return ProductData(
             source_type="text",
             provider="manual",
@@ -216,6 +228,31 @@ class ProductScraper:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=20) as response:
             return response.read().decode("utf-8", errors="ignore")
+
+    def _read_cache(self, url: str) -> ProductData | None:
+        if SCRAPER_CACHE_TTL_SECONDS <= 0:
+            return None
+
+        now = time.monotonic()
+        with self._cache_lock:
+            cached = self._cache.get(url)
+            if cached is None:
+                return None
+            expires_at, payload = cached
+            if expires_at <= now:
+                self._cache.pop(url, None)
+                return None
+        return ProductData.model_validate(payload)
+
+    def _write_cache(self, url: str, product: ProductData) -> None:
+        if SCRAPER_CACHE_TTL_SECONDS <= 0:
+            return
+
+        with self._cache_lock:
+            self._cache[url] = (
+                time.monotonic() + SCRAPER_CACHE_TTL_SECONDS,
+                product.model_dump(),
+            )
 
     def _parse_shopify(self, url: str, html: str) -> ProductData:
         json_ld_items = _extract_json_ld(html)

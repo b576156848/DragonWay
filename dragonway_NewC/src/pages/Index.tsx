@@ -2,7 +2,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FormData, AnalysisResult, AudienceData } from '@/data/types';
 import { useI18n } from '@/lib/i18n';
-import { DEMO_FORM_DATA } from '@/data/mockData';
 import { normalizeFormDataForApi, submitAnalysis } from '@/lib/api';
 import HeroSection from '@/components/dragonway/HeroSection';
 import WorkflowSection from '@/components/dragonway/WorkflowSection';
@@ -19,6 +18,27 @@ import PushStatus from '@/components/dragonway/PushStatus';
 import EmailCapture from '@/components/dragonway/EmailCapture';
 
 type Stage = 'input' | 'processing' | 'results';
+
+const SAMPLE_PRODUCT_URL = 'https://tomlinsonsdev.myshopify.com/products/zignature-catfish-dog-food';
+
+const SAMPLE_DETAILED_FORM_DATA: FormData = {
+  product_url: SAMPLE_PRODUCT_URL,
+  food_format: 'dry',
+  pet_type: 'dog',
+  life_stage: ['adult', 'all_life'],
+  core_claims: ['limited_ingredient', 'grain_free', 'high_protein'],
+  primary_goal: 'find_kol',
+  owner_pet: 'dog_owner',
+  owner_city: 'tier1',
+  owner_price: 'mid_high',
+  brand_positioning: 'premium_import',
+  preferred_platforms: ['xiaohongshu', 'douyin'],
+  content_preference: ['ingredient_review', 'educational', 'dog_reaction'],
+  preferred_kol_type: 'expert',
+  budget_band: '10k_30k',
+  timeline: '1_month',
+  special_constraints: '',
+};
 
 const Index = () => {
   const { t, locale, toggleLocale } = useI18n();
@@ -124,8 +144,9 @@ const Index = () => {
   }, [formData, startAnalysis]);
 
   const handleDemoMode = useCallback(() => {
-    setFormData(DEMO_FORM_DATA);
+    setFormData(SAMPLE_DETAILED_FORM_DATA);
     setMode('detailed');
+    setChatStarted(false);
     // scroll to CTA section
     setTimeout(() => ctaRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   }, []);
@@ -290,9 +311,12 @@ const Index = () => {
       {/* Processing stage */}
       {stage === 'processing' && (
         <div className="max-w-2xl mx-auto px-4 py-24">
-          <AgentProgress onComplete={() => {
+          <AgentProgress
+            ready={pendingResult !== null || analysisError !== null}
+            onComplete={() => {
             setProcessingDone(true);
-          }} />
+            }}
+          />
         </div>
       )}
 

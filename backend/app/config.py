@@ -36,6 +36,9 @@ GMI_API_BASE = os.getenv("GMI_API_BASE", "https://api.gmi-serving.com/v1")
 GMI_API_KEY = os.getenv("GMI_API_KEY", "")
 GMI_MODEL = os.getenv("GMI_MODEL", "anthropic/claude-sonnet-4.5")
 GMI_TIMEOUT_SECONDS = int(os.getenv("GMI_TIMEOUT_SECONDS", "40"))
+MATCHER_ENRICH_ENABLED = os.getenv("MATCHER_ENRICH_ENABLED", "false").lower() == "true"
+QUICK_CHAT_AGENT_ENABLED = os.getenv("QUICK_CHAT_AGENT_ENABLED", "false").lower() == "true"
+SCRAPER_CACHE_TTL_SECONDS = int(os.getenv("SCRAPER_CACHE_TTL_SECONDS", "900"))
 
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))

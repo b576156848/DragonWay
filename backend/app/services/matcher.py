@@ -21,6 +21,7 @@ from backend.app.schemas.campaign import (
     ProductData,
 )
 from backend.app.schemas.questionnaire import QuestionnaireInput
+from backend.app.config import MATCHER_ENRICH_ENABLED
 from backend.app.services.ai import LLMClient
 from backend.app.services.kol_store import KOLStore
 
@@ -95,7 +96,7 @@ class KOLMatcher:
         self.client = LLMClient()
 
     def match(self, questionnaire: QuestionnaireInput, product: ProductData) -> list[KOLMatch]:
-        return self.rank(questionnaire, product, limit=3, enrich=True)
+        return self.rank(questionnaire, product, limit=3, enrich=False)
 
     def rank(
         self,
@@ -103,7 +104,7 @@ class KOLMatcher:
         product: ProductData,
         *,
         limit: int | None = 3,
-        enrich: bool = True,
+        enrich: bool = False,
     ) -> list[KOLMatch]:
         profiles = self.store.list_profiles()
         scored: list[tuple[int, dict[str, Any], dict[str, DimensionScore]]] = []
@@ -532,7 +533,7 @@ class KOLMatcher:
         questionnaire: QuestionnaireInput,
         product: ProductData,
     ) -> list[KOLMatch]:
-        if not matches:
+        if not matches or not MATCHER_ENRICH_ENABLED:
             return matches
 
         improved = self.client.generate_model(

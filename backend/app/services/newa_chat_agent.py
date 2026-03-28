@@ -4,6 +4,7 @@ from typing import Any
 
 from backend.app.schemas.campaign import ProductData
 from backend.app.schemas_newa import FormData, KolProfile, QuickChatAgentDecision
+from backend.app.config import QUICK_CHAT_AGENT_ENABLED
 from backend.app.services.ai import LLMClient
 
 
@@ -47,7 +48,7 @@ class NewAQuickChatAgent:
             next_step_id=default_next_step,
             agent_messages=default_messages[:2],
         )
-        if not self.client.enabled:
+        if not QUICK_CHAT_AGENT_ENABLED or not self.client.enabled:
             return fallback
 
         decision = self.client.generate_model(

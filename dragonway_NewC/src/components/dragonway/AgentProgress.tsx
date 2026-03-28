@@ -4,25 +4,36 @@ import { Check, Loader2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 
 const STEP_DEFS = [
-  { id: 'extract', labelKey: 'agentStepExtract' as const, duration: 2000 },
-  { id: 'audience', labelKey: 'agentStepAudience' as const, duration: 1800 },
-  { id: 'matching', labelKey: 'agentStepMatching' as const, duration: 2500 },
-  { id: 'content', labelKey: 'agentStepContent' as const, duration: 2200 },
-  { id: 'push', labelKey: 'agentStepPush' as const, duration: 1500 },
+  { id: 'extract', labelKey: 'agentStepExtract' as const, duration: 450 },
+  { id: 'audience', labelKey: 'agentStepAudience' as const, duration: 400 },
+  { id: 'matching', labelKey: 'agentStepMatching' as const, duration: 500 },
+  { id: 'content', labelKey: 'agentStepContent' as const, duration: 450 },
+  { id: 'push', labelKey: 'agentStepPush' as const, duration: 350 },
 ];
 
 interface AgentProgressProps {
+  ready: boolean;
   onComplete: () => void;
 }
 
-const AgentProgress = ({ onComplete }: AgentProgressProps) => {
+const AgentProgress = ({ ready, onComplete }: AgentProgressProps) => {
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(0);
   const [completed, setCompleted] = useState<number[]>([]);
 
   useEffect(() => {
+    if (!ready) return;
+    setCompleted(STEP_DEFS.map((_, index) => index));
+    setCurrentStep(STEP_DEFS.length);
+  }, [ready]);
+
+  useEffect(() => {
     if (currentStep >= STEP_DEFS.length) {
-      setTimeout(onComplete, 600);
+      const timer = setTimeout(onComplete, 180);
+      return () => clearTimeout(timer);
+    }
+
+    if (ready) {
       return;
     }
 
@@ -32,7 +43,7 @@ const AgentProgress = ({ onComplete }: AgentProgressProps) => {
     }, STEP_DEFS[currentStep].duration);
 
     return () => clearTimeout(timer);
-  }, [currentStep, onComplete]);
+  }, [currentStep, onComplete, ready]);
 
   return (
     <div className="max-w-xl mx-auto py-20">

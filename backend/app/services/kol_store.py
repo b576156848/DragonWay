@@ -12,12 +12,16 @@ from backend.app.config import DATABASE_PATH, KOL_ASSET_PREFIX, KOL_DATA_PATH
 
 
 PORTRAIT_OVERRIDES = {
-    "real_003": "uu小可爱.png",
+    "real_001": "sweety-horse.png",
+    "real_002": "tingting-border-collie.png",
+    "real_003": "uu-xiaokeai.png",
     "real_004": "santotia.png",
-    "real_005": "周禾宠物营养师.png",
-    "real_006": "窝里相宠物日托.png",
-    "real_008": "哈哈皮没有眼睛.png",
-    "real_010": "小花花的一天.png",
+    "real_005": "zhouhe-pet-nutritionist.png",
+    "real_006": "wolixiang-daycare.png",
+    "real_007": "keming.png",
+    "real_008": "hahapi-no-eyes.png",
+    "real_009": "wo-shi-bao-zi-ya.png",
+    "real_010": "xiaohuahua-day.png",
 }
 
 

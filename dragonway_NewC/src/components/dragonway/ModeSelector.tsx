@@ -55,7 +55,7 @@ const ModeSelector = ({ mode, onSelect }: ModeSelectorProps) => {
             }`}
           >
             {card.badge && (
-              <span className="absolute -top-2.5 right-3 px-3 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">
+              <span className="absolute top-3 right-3 px-3 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">
                 {card.badge}
               </span>
             )}

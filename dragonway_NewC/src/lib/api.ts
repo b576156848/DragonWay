@@ -8,6 +8,169 @@ import type {
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 export const SCHEMA_VERSION = 'dragonway-newa.v1';
 
+type CachedUrlProfile = {
+  agent_messages: string[];
+  preview: {
+    title: string;
+    subtitle: string;
+    image: string;
+    bullets: string[];
+  };
+  inferred_fields: Pick<FormData, 'food_format' | 'pet_type'> & {
+    core_claims: FormData['core_claims'];
+  };
+};
+
+const KNOWN_FAST_URLS: Record<string, CachedUrlProfile> = {
+  'https://tomlinsonsdev.myshopify.com/products/zignature-catfish-dog-food': {
+    agent_messages: [
+      'I pulled a cached product brief for Zignature Catfish Dry Dog Food to keep this walkthrough fast.',
+      'The positioning is clear: limited-ingredient, grain-free, premium dry dog food with a clean ingredient-led story for sensitive-digestion and quality-focused buyers.',
+    ],
+    preview: {
+      title: 'Zignature Catfish Dry Dog Food',
+      subtitle: 'Dry dog food | limited-ingredient | grain-free',
+      image: 'https://tomlinsonsdev.myshopify.com/cdn/shop/files/Zignature_Dry_Packaging_CATFISH.jpg?v=1727421508',
+      bullets: [
+        'Single-protein catfish and limited-ingredient framing are visible immediately.',
+        'The product page emphasizes premium dry-food positioning rather than discount-led value.',
+        'This is a strong fit for ingredient-review, digestion, and premium-import storytelling.',
+      ],
+    },
+    inferred_fields: {
+      food_format: 'dry',
+      pet_type: 'dog',
+      core_claims: ['limited_ingredient', 'grain_free', 'high_protein'],
+    },
+  },
+  'https://sweetypaw.myshopify.com': {
+    agent_messages: [
+      'I recognized SweetyPaw as a storefront-level URL, so I loaded a cached site brief instead of waiting on a full crawl.',
+      'This site reads more like a pet lifestyle storefront than a single hero SKU page, so the next steps should help narrow down the product angle before matching creators.',
+    ],
+    preview: {
+      title: 'SweetyPaw Storefront',
+      subtitle: 'Brand homepage | pet lifestyle storefront | cat & dog audience',
+      image: 'https://cdn.shopify.com/s/files/1/0360/7474/9996/files/sweetypawlogoBLUE.png?height=628&pad_color=fff&v=1613719816&width=1200',
+      bullets: [
+        'Homepage messaging leans toward pet lifestyle and comfort rather than one flagship formula.',
+        'The site speaks to both cat and dog owners, which means audience narrowing matters early.',
+        'For China GTM, this kind of storefront usually needs one lead SKU or one clear category angle before KOL matching.',
+      ],
+    },
+    inferred_fields: {
+      food_format: 'other',
+      pet_type: 'dog',
+      core_claims: ['high_protein', 'fresh_ingredients', 'premium_imported'],
+    },
+  },
+  'https://puphug.myshopify.com/collections/dog-food/products/natural-roll-dog-food-chicken-2-lb': {
+    agent_messages: [
+      'I pulled a cached brief for PupHug Natural Roll Dog Food (Chicken, 2 lb) so we can skip the crawl delay.',
+      'This page reads like a chicken-led dog-food SKU with ingredient transparency and a more niche, specialty-feeding profile than mass-market kibble.',
+    ],
+    preview: {
+      title: 'Natural Roll Dog Food (Chicken 2 lb)',
+      subtitle: 'Dog food product page | chicken-led formula | specialty format',
+      image: 'https://puphug.myshopify.com/cdn/shop/products/017035-500x500_1200x1200.jpg?v=1532870576',
+      bullets: [
+        'The page clearly names chicken and lists ingredients directly in the product description.',
+        'The roll format makes it feel more specialty and usage-driven than standard dry kibble.',
+        'This is a good candidate for education-led content around ingredients, feeding use cases, and premium quality cues.',
+      ],
+    },
+    inferred_fields: {
+      food_format: 'dry',
+      pet_type: 'dog',
+      core_claims: ['high_protein', 'digestive_health', 'premium_imported'],
+    },
+  },
+  'https://pretty-litter-dev.myshopify.com': {
+    agent_messages: [
+      'I recognized Pretty Litter as a cached cat-care storefront and loaded a prebuilt summary to speed this up.',
+      'Important note: this is a cat-litter and cat-health positioning page, not a dog-food product page, so the later recommendations should be interpreted as pet-category guidance rather than food-specific matching.',
+    ],
+    preview: {
+      title: 'Pretty Litter Storefront',
+      subtitle: 'Cat litter subscription | cat-health positioning | monthly delivery',
+      image: 'https://pretty-litter-dev.myshopify.com/cdn/shop/t/3/assets/prettylitter-opengraph.jpg?v=168601340156469295771515804996',
+      bullets: [
+        'The homepage leads with color-changing litter and health-monitoring claims.',
+        'Subscription delivery and odor-control convenience are central value props.',
+        'Category-wise, this is a cat-care brand, so it sits outside the core dog-food workflow.',
+      ],
+    },
+    inferred_fields: {
+      food_format: 'other',
+      pet_type: 'cat',
+      core_claims: ['digestive_health', 'fresh_ingredients', 'premium_imported'],
+    },
+  },
+  'https://petrelish.myshopify.com': {
+    agent_messages: [
+      'I recognized Pet Relish and loaded a cached site summary so we can move faster.',
+      'The brand is positioned more like a dog-food topper or meal-enhancement product than a complete staple diet, which gives it a strong flavor-led and mealtime-upgrade angle.',
+    ],
+    preview: {
+      title: 'Pet Relish Storefront',
+      subtitle: 'Dog food topper brand | flavor-led mealtime upgrade',
+      image: 'https://petrelish.myshopify.com/cdn/shop/files/PetRelish-DogFoodTopper-Social.png?v=1771268559',
+      bullets: [
+        'Homepage language focuses on globally inspired, dog-safe flavors and easy pour-over use.',
+        'The clearest value proposition is making everyday kibble more appealing without switching foods.',
+        'This kind of SKU is well suited to taste, routine-upgrade, and picky-eater narratives.',
+      ],
+    },
+    inferred_fields: {
+      food_format: 'dry',
+      pet_type: 'dog',
+      core_claims: ['high_protein', 'limited_ingredient', 'premium_imported'],
+    },
+  },
+};
+
+function normalizeKnownUrl(url: string): string {
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    const path = parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '');
+    return `${parsed.origin}${path}`;
+  } catch {
+    return trimmed.replace(/\/+$/, '');
+  }
+}
+
+function createDefaultFormData(productUrl: string): FormData {
+  return {
+    product_url: productUrl,
+    food_format: '',
+    pet_type: '',
+    life_stage: ['all_life'],
+    core_claims: [],
+    primary_goal: 'find_kol',
+    owner_pet: 'dog_owner',
+    owner_city: '',
+    owner_price: '',
+    brand_positioning: 'premium_import',
+    preferred_platforms: [],
+    content_preference: ['ingredient_review', 'dog_reaction'],
+    preferred_kol_type: 'no_preference',
+    budget_band: '',
+    timeline: '1_month',
+    special_constraints: '',
+  };
+}
+
+function getKnownFastUrlProfile(url: string): CachedUrlProfile | null {
+  return KNOWN_FAST_URLS[normalizeKnownUrl(url)] ?? null;
+}
+
+function delayedResolve<T>(value: T, ms: number): Promise<T> {
+  return new Promise(resolve => {
+    window.setTimeout(() => resolve(value), ms);
+  });
+}
+
 export function normalizeFormDataForApi(formData: FormData): FormData {
   return {
     ...formData,
@@ -151,6 +314,12 @@ export interface QuickChatTurnResponse {
   agent_messages: string[];
   step: QuickChatStep;
   form_data: FormData;
+  product_preview?: {
+    title: string;
+    subtitle: string;
+    image: string;
+    bullets: string[];
+  };
 }
 
 export function getSchemaMeta() {
@@ -171,6 +340,27 @@ export function quickChatStart() {
 }
 
 export function quickChatTurn(payload: QuickChatTurnRequest) {
+  if (payload.step_id === 'welcome' && payload.value) {
+    const cachedProfile = getKnownFastUrlProfile(payload.value);
+    if (cachedProfile) {
+      const normalizedUrl = normalizeKnownUrl(payload.value);
+      return delayedResolve<QuickChatTurnResponse>({
+        session_id: payload.session_id,
+        agent_messages: cachedProfile.agent_messages,
+        step: {
+          step_id: 'food_format',
+          input_type: 'select',
+          field: 'food_format',
+        },
+        product_preview: cachedProfile.preview,
+        form_data: {
+          ...createDefaultFormData(normalizedUrl),
+          ...cachedProfile.inferred_fields,
+        },
+      }, 1200);
+    }
+  }
+
   return request<QuickChatTurnResponse>('/api/v1/quick/session/turn', {
     method: 'POST',
     body: JSON.stringify(payload),

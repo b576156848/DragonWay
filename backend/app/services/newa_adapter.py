@@ -66,7 +66,7 @@ class NewAAdapter:
         session_id = self.sessions.ensure_session(payload.session_id, source_mode="quick")
         questionnaire = form_to_questionnaire(payload.form_data)
         product = self._resolve_product(session_id, payload.form_data)
-        matches = self.matcher.rank(questionnaire, product, limit=3, enrich=True)
+        matches = self.matcher.rank(questionnaire, product, limit=3, enrich=False)
         top_kols = [match_to_kol_profile(match) for match in matches]
         audience = aggregate_audience(top_kols, payload.form_data)
         summary = self._preview_summary(product, top_kols)
@@ -128,9 +128,12 @@ class NewAAdapter:
         if payload.source == "quick_chat" and session and session.refined_kols_json:
             kols = [match_to_front_kol(item) for item in _load_json(session.refined_kols_json)]
             audience = audience_from_json(session.refined_audience_json, payload.form_data, kols)
+        elif payload.source == "quick_chat" and session and session.preview_kols_json:
+            kols = [match_to_front_kol(item) for item in _load_json(session.preview_kols_json)]
+            audience = audience_from_json(session.preview_audience_json, payload.form_data, kols)
         else:
             questionnaire = form_to_questionnaire(payload.form_data)
-            matches = self.matcher.rank(questionnaire, product, limit=3, enrich=True)
+            matches = self.matcher.rank(questionnaire, product, limit=3, enrich=False)
             kols = [match_to_kol_profile(match) for match in matches]
             audience = aggregate_audience(kols, payload.form_data)
 

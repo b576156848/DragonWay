@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from backend.app.api import router
-from backend.app.config import FRONTEND_ORIGINS
+from backend.app.api_newa import router_newa
+from backend.app.config import FRONTEND_ORIGINS, KOL_PORTRAIT_DIR
 
 
 app = FastAPI(title="DragonWay API", version="0.1.0")
@@ -18,6 +20,10 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(router_newa)
+
+if KOL_PORTRAIT_DIR.exists():
+    app.mount("/assets/kols", StaticFiles(directory=KOL_PORTRAIT_DIR), name="kol-assets")
 
 
 @app.get("/health")

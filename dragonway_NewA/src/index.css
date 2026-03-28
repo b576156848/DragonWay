@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 28 100% 97%;
+    --foreground: 0 17% 21%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 17% 21%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 17% 21%;
+
+    --primary: 14 100% 71%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 100% 95%;
+    --secondary-foreground: 0 17% 21%;
+
+    --muted: 25 27% 93%;
+    --muted-foreground: 20 12% 50%;
+
+    --accent: 172 42% 64%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 18 100% 91%;
+    --input: 18 100% 91%;
+    --ring: 14 100% 71%;
+
+    --radius: 1.25rem;
+
+    --sidebar-background: 28 100% 97%;
+    --sidebar-foreground: 20 12% 50%;
+    --sidebar-primary: 14 100% 71%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 25 27% 93%;
+    --sidebar-accent-foreground: 0 17% 21%;
+    --sidebar-border: 18 100% 91%;
+    --sidebar-ring: 14 100% 71%;
+
+    /* Custom tokens */
+    --glow: 14 100% 71%;
+    --glow-secondary: 172 42% 64%;
+    --surface-elevated: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Nunito', system-ui, sans-serif;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-weight: 600;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: hsl(var(--card));
+    border: 1.5px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: 0 4px 20px hsla(14, 100%, 71%, 0.08);
+  }
+
+  .glass-card-elevated {
+    background: hsl(var(--card));
+    border: 1.5px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: 0 6px 24px hsla(14, 100%, 71%, 0.12);
+  }
+
+  .glow-border {
+    @apply border border-primary/30;
+    box-shadow: 0 4px 20px hsla(14, 100%, 71%, 0.1);
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+
+  .gradient-text-purple {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+
+  .gradient-bg {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--accent) / 0.08));
+  }
+
+  .dot-grid {
+    background-color: hsl(var(--background));
+  }
+
+  .agent-pulse {
+    animation: agent-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes agent-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--border)) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}

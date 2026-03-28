@@ -140,6 +140,8 @@ class LLMClient:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.api_key}",
+                "User-Agent": "DragonWay/0.1 (+https://dragonfarm.cn)",
+                "Accept": "application/json",
             },
             method="POST",
         )

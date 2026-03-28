@@ -1,0 +1,549 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DragonWay NewA Frontend Contract",
+  "description": "Schema-first contract for dragonway_NewA. This contract is designed to preserve the existing frontend visuals and flow without modifying UI structure.",
+  "schema_version": "dragonway-newa.v1",
+  "frontend_id": "dragonway_NewA",
+  "x-ui-flows": {
+    "index_page": {
+      "stages": [
+        "input",
+        "processing",
+        "results"
+      ],
+      "entry_modes": [
+        "choosing",
+        "quick",
+        "detailed"
+      ]
+    },
+    "quick_chat": {
+      "steps": [
+        "welcome",
+        "analyzing_url",
+        "food_format",
+        "pet_type",
+        "core_claims",
+        "owner_city",
+        "owner_price",
+        "budget_band",
+        "preferred_platforms",
+        "matching",
+        "kol_results",
+        "refine",
+        "final"
+      ],
+      "notes": [
+        "Quick chat keeps the existing in-chat KOL preview and refinement flow.",
+        "Round 1 shows exactly 3 KOLs.",
+        "Round 2 can expand to 4 creators after refinement."
+      ]
+    },
+    "detailed_form": {
+      "submission_target": "analysis_submit"
+    },
+    "results_page": {
+      "sections": [
+        "opportunities",
+        "kols",
+        "audience",
+        "campaign_content",
+        "push_status",
+        "email_capture"
+      ]
+    }
+  },
+  "$defs": {
+    "FormData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product_url",
+        "food_format",
+        "pet_type",
+        "life_stage",
+        "core_claims",
+        "primary_goal",
+        "owner_pet",
+        "owner_city",
+        "owner_price",
+        "brand_positioning",
+        "preferred_platforms",
+        "content_preference",
+        "preferred_kol_type",
+        "budget_band",
+        "timeline",
+        "special_constraints"
+      ],
+      "properties": {
+        "product_url": { "type": "string" },
+        "food_format": { "type": "string" },
+        "pet_type": { "type": "string" },
+        "life_stage": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "core_claims": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 3
+        },
+        "primary_goal": { "type": "string" },
+        "owner_pet": { "type": "string" },
+        "owner_city": { "type": "string" },
+        "owner_price": { "type": "string" },
+        "brand_positioning": { "type": "string" },
+        "preferred_platforms": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 2
+        },
+        "content_preference": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "preferred_kol_type": { "type": "string" },
+        "budget_band": { "type": "string" },
+        "timeline": { "type": "string" },
+        "special_constraints": { "type": "string" }
+      }
+    },
+    "KolProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "avatar",
+        "platform",
+        "followers",
+        "engagement",
+        "matchReason",
+        "priceRange",
+        "contentTags",
+        "badge"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "platform": {
+          "type": "string",
+          "enum": ["Xiaohongshu", "Douyin"]
+        },
+        "profileUrl": {
+          "type": "string"
+        },
+        "followers": { "type": "string" },
+        "engagement": { "type": "string" },
+        "matchReason": { "type": "string" },
+        "priceRange": { "type": "string" },
+        "contentTags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "badge": { "type": "string" }
+      }
+    },
+    "OpportunityCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "description", "icon"],
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" }
+      }
+    },
+    "AudienceData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ageDistribution",
+        "cityTier",
+        "spendingPower",
+        "interestTags"
+      ],
+      "properties": {
+        "ageDistribution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["age", "percentage"],
+            "properties": {
+              "age": { "type": "string" },
+              "percentage": { "type": "number" }
+            }
+          }
+        },
+        "cityTier": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tier", "percentage"],
+            "properties": {
+              "tier": { "type": "string" },
+              "percentage": { "type": "number" }
+            }
+          }
+        },
+        "spendingPower": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["segment", "percentage"],
+            "properties": {
+              "segment": { "type": "string" },
+              "percentage": { "type": "number" }
+            }
+          }
+        },
+        "interestTags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "CampaignContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "xiaohongshuPost",
+        "douyinScript",
+        "kolOutreach"
+      ],
+      "properties": {
+        "xiaohongshuPost": { "type": "string" },
+        "douyinScript": { "type": "string" },
+        "kolOutreach": { "type": "string" }
+      }
+    },
+    "AnalysisResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opportunities", "kols", "audience", "campaign"],
+      "properties": {
+        "opportunities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/OpportunityCard" }
+        },
+        "kols": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/KolProfile" }
+        },
+        "audience": { "$ref": "#/$defs/AudienceData" },
+        "campaign": { "$ref": "#/$defs/CampaignContent" }
+      }
+    },
+    "QuickParseUrlRequest": {
+      "type": "object",
+      "required": ["product_url"],
+      "properties": {
+        "product_url": { "type": "string", "minLength": 1 }
+      }
+    },
+    "QuickParseUrlResponse": {
+      "type": "object",
+      "required": ["session_id", "product_url", "summary", "inferred_fields", "source_confidence"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "product_url": { "type": "string" },
+        "summary": { "type": "string" },
+        "inferred_fields": {
+          "type": "object",
+          "required": ["food_format", "pet_type", "core_claims"],
+          "properties": {
+            "food_format": { "type": "string" },
+            "pet_type": { "type": "string" },
+            "core_claims": {
+              "type": "array",
+              "items": { "type": "string" },
+              "maxItems": 3
+            }
+          }
+        },
+        "source_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "ChatOption": {
+      "type": "object",
+      "required": ["value", "label"],
+      "properties": {
+        "value": { "type": "string" },
+        "label": { "type": "string" }
+      }
+    },
+    "QuickChatStep": {
+      "type": "object",
+      "required": ["step_id", "input_type"],
+      "properties": {
+        "step_id": { "type": "string" },
+        "input_type": {
+          "type": "string",
+          "enum": ["url", "select", "multi-select", "kol-cards", "refine", "final"]
+        },
+        "field": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ChatOption" }
+        },
+        "maxSelections": { "type": "integer" },
+        "placeholder": { "type": "string" },
+        "kols": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/KolProfile" }
+        }
+      }
+    },
+    "QuickChatStartResponse": {
+      "type": "object",
+      "required": ["session_id", "agent_messages", "step", "form_data"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "agent_messages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "step": { "$ref": "#/$defs/QuickChatStep" },
+        "form_data": { "$ref": "#/$defs/FormData" }
+      }
+    },
+    "QuickChatTurnRequest": {
+      "type": "object",
+      "required": ["session_id", "step_id"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "step_id": { "type": "string" },
+        "value": { "type": "string" },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "selected_kol_id": { "type": "string" },
+        "preference": {
+          "type": "string",
+          "enum": ["reach", "conversion"]
+        }
+      }
+    },
+    "QuickChatTurnResponse": {
+      "type": "object",
+      "required": ["session_id", "agent_messages", "step", "form_data"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "agent_messages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "step": { "$ref": "#/$defs/QuickChatStep" },
+        "form_data": { "$ref": "#/$defs/FormData" }
+      }
+    },
+    "QuickMatchRequest": {
+      "type": "object",
+      "required": ["form_data", "source"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "form_data": { "$ref": "#/$defs/FormData" },
+        "source": {
+          "type": "string",
+          "const": "quick_chat"
+        }
+      }
+    },
+    "QuickMatchResponse": {
+      "type": "object",
+      "required": ["session_id", "top_kols", "audience", "summary"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "top_kols": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/KolProfile" }
+        },
+        "audience": { "$ref": "#/$defs/AudienceData" },
+        "summary": { "type": "string" }
+      }
+    },
+    "QuickRefineRequest": {
+      "type": "object",
+      "required": [
+        "form_data",
+        "initial_kols",
+        "kept_kol_ids"
+      ],
+      "properties": {
+        "session_id": { "type": "string" },
+        "form_data": { "$ref": "#/$defs/FormData" },
+        "initial_kols": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/KolProfile" }
+        },
+        "kept_kol_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dropped_kol_id": {
+          "type": ["string", "null"]
+        },
+        "preference": {
+          "type": "string",
+          "enum": ["reach", "conversion"]
+        }
+      }
+    },
+    "QuickRefineResponse": {
+      "type": "object",
+      "required": ["session_id", "refined_kols", "refined_audience", "summary"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "refined_kols": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/KolProfile" }
+        },
+        "refined_audience": { "$ref": "#/$defs/AudienceData" },
+        "summary": { "type": "string" }
+      }
+    },
+    "AnalysisSubmitRequest": {
+      "type": "object",
+      "required": ["form_data", "source"],
+      "properties": {
+        "session_id": { "type": "string" },
+        "form_data": { "$ref": "#/$defs/FormData" },
+        "source": {
+          "type": "string",
+          "enum": ["detailed_form", "quick_chat"]
+        }
+      }
+    },
+    "AnalysisSubmitResponse": {
+      "type": "object",
+      "required": ["result", "source"],
+      "properties": {
+        "result": { "$ref": "#/$defs/AnalysisResult" },
+        "source": {
+          "type": "string",
+          "enum": ["detailed_form", "quick_chat"]
+        }
+      }
+    },
+    "LeadCaptureRequest": {
+      "type": "object",
+      "required": ["email"],
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "company": { "type": "string" },
+        "context": {
+          "type": "object",
+          "properties": {
+            "source_mode": {
+              "type": "string",
+              "enum": ["quick", "detailed"]
+            },
+            "form_data": {
+              "$ref": "#/$defs/FormData"
+            }
+          }
+        }
+      }
+    },
+    "LeadCaptureResponse": {
+      "type": "object",
+      "required": ["success", "message"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "message": { "type": "string" }
+      }
+    },
+    "SchemaMetaResponse": {
+      "type": "object",
+      "required": ["schema_version", "frontend_id", "flows"],
+      "properties": {
+        "schema_version": { "type": "string" },
+        "frontend_id": { "type": "string", "const": "dragonway_NewA" },
+        "flows": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["quick_chat", "detailed_form", "results", "lead_capture"]
+          }
+        }
+      }
+    }
+  },
+  "x-endpoints": [
+    {
+      "name": "schema_meta",
+      "method": "GET",
+      "path": "/api/v1/schema-meta",
+      "response": { "$ref": "#/$defs/SchemaMetaResponse" },
+      "used_by": ["bootstrap"]
+    },
+    {
+      "name": "quick_chat_start",
+      "method": "POST",
+      "path": "/api/v1/quick/session/start",
+      "response": { "$ref": "#/$defs/QuickChatStartResponse" },
+      "used_by": ["ChatAgent bootstrap"]
+    },
+    {
+      "name": "quick_chat_turn",
+      "method": "POST",
+      "path": "/api/v1/quick/session/turn",
+      "request": { "$ref": "#/$defs/QuickChatTurnRequest" },
+      "response": { "$ref": "#/$defs/QuickChatTurnResponse" },
+      "used_by": ["ChatAgent conversation loop"]
+    },
+    {
+      "name": "quick_parse_url",
+      "method": "POST",
+      "path": "/api/v1/quick/parse-url",
+      "request": { "$ref": "#/$defs/QuickParseUrlRequest" },
+      "response": { "$ref": "#/$defs/QuickParseUrlResponse" },
+      "used_by": ["ChatAgent: welcome -> analyzing_url"]
+    },
+    {
+      "name": "quick_match_preview",
+      "method": "POST",
+      "path": "/api/v1/quick/match-preview",
+      "request": { "$ref": "#/$defs/QuickMatchRequest" },
+      "response": { "$ref": "#/$defs/QuickMatchResponse" },
+      "used_by": ["ChatAgent: matching -> kol_results"]
+    },
+    {
+      "name": "quick_refine_matches",
+      "method": "POST",
+      "path": "/api/v1/quick/refine",
+      "request": { "$ref": "#/$defs/QuickRefineRequest" },
+      "response": { "$ref": "#/$defs/QuickRefineResponse" },
+      "used_by": ["ChatAgent / KolCards round 2 optimization"]
+    },
+    {
+      "name": "analysis_submit",
+      "method": "POST",
+      "path": "/api/v1/analysis/submit",
+      "request": { "$ref": "#/$defs/AnalysisSubmitRequest" },
+      "response": { "$ref": "#/$defs/AnalysisSubmitResponse" },
+      "used_by": ["QuestionnaireForm submit", "Quick mode final result hydration"]
+    },
+    {
+      "name": "lead_capture",
+      "method": "POST",
+      "path": "/api/v1/leads/capture",
+      "request": { "$ref": "#/$defs/LeadCaptureRequest" },
+      "response": { "$ref": "#/$defs/LeadCaptureResponse" },
+      "used_by": ["EmailCapture"]
+    }
+  ]
+}

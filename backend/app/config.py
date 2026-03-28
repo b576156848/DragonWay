@@ -28,7 +28,9 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 DATABASE_PATH = DATA_DIR / "dragonway.db"
-KOL_DATA_PATH = PROJECT_ROOT / "mock_kol_data.json"
+KOL_DATA_PATH = PROJECT_ROOT / "real_kol_data.json"
+KOL_PORTRAIT_DIR = PROJECT_ROOT / "real_kol_portrait"
+KOL_ASSET_PREFIX = "/assets/kols"
 
 GMI_API_BASE = os.getenv("GMI_API_BASE", "https://api.gmi-serving.com/v1")
 GMI_API_KEY = os.getenv("GMI_API_KEY", "")
@@ -51,6 +53,8 @@ GOOGLE_FRONTEND_SUCCESS_URL = os.getenv("GOOGLE_FRONTEND_SUCCESS_URL", "http://l
 FRONTEND_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://dragonway-ai-pathfinder.lovable.app",

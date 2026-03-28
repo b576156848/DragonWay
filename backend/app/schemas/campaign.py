@@ -135,6 +135,8 @@ class KOLMatch(BaseModel):
     collaboration_suggestion: CollaborationSuggestion
     price_range: PriceRange
     email: Optional[str] = None
+    profile_url: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 class BudgetAllocationItem(BaseModel):

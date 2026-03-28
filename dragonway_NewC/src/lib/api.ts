@@ -386,6 +386,13 @@ export function quickChatTurn(payload: QuickChatTurnRequest) {
   });
 }
 
+export function quickChatTurnLive(payload: QuickChatTurnRequest) {
+  return request<QuickChatTurnResponse>('/api/v1/quick/session/turn', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function quickMatchPreview(payload: QuickMatchRequest) {
   return request<QuickMatchResponse>('/api/v1/quick/match-preview', {
     method: 'POST',

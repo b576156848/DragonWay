@@ -8,6 +8,7 @@ import {
   normalizeFormDataForApi,
   quickChatStart,
   quickChatTurn,
+  quickChatTurnLive,
   quickMatchPreview,
 } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -313,6 +314,7 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
   const [welcomeReady, setWelcomeReady] = useState(false);
   const initiated = useRef(false);
   const sessionBootstrapRef = useRef<Promise<{ session_id: string } | null> | null>(null);
+  const backgroundParseRef = useRef<Promise<void> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentStep = stepConfig[currentStepId];
@@ -490,6 +492,24 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
         t('chatFoodFormat'),
       ], 650);
       setCurrentStepId('food_format');
+
+      if (knownFastUrl) {
+        backgroundParseRef.current = ensureSessionId()
+          .then(realSessionId => quickChatTurnLive({
+            session_id: realSessionId,
+            step_id: 'welcome',
+            value,
+          }))
+          .then(liveResponse => {
+            if (liveResponse.session_id) {
+              setSessionId(liveResponse.session_id);
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            backgroundParseRef.current = null;
+          });
+      }
     } catch (error) {
       addAgentMessages([
         error instanceof Error ? error.message : 'I could not analyze that product page. Please try another URL.',
@@ -554,6 +574,9 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
     setIsBusy(true);
 
     try {
+      if (backgroundParseRef.current) {
+        await backgroundParseRef.current;
+      }
       const startedAt = Date.now();
       const normalizedFormData = normalizeFormDataForApi(nextFormData);
       const response = await quickMatchPreview({

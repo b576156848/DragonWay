@@ -20,6 +20,28 @@ import EmailCapture from '@/components/dragonway/EmailCapture';
 type Stage = 'input' | 'processing' | 'results';
 
 const delay = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+const RESULT_REVEAL_INTERVAL_MS = 240;
+
+const ResultReveal = ({
+  show,
+  children,
+}: {
+  show: boolean;
+  children: React.ReactNode;
+}) => (
+  <AnimatePresence initial={false}>
+    {show ? (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 8 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
+        {children}
+      </motion.div>
+    ) : null}
+  </AnimatePresence>
+);
 
 const SAMPLE_PRODUCT_URL = 'https://tomlinsonsdev.myshopify.com/products/zignature-catfish-dog-food';
 
@@ -71,6 +93,7 @@ const Index = () => {
   const [pendingResult, setPendingResult] = useState<AnalysisResult | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [leadSourceMode, setLeadSourceMode] = useState<'quick' | 'detailed'>('quick');
+  const [resultRevealCount, setResultRevealCount] = useState(0);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('theme');
@@ -89,9 +112,30 @@ const Index = () => {
   useEffect(() => {
     if (stage !== 'processing' || !processingDone || !pendingResult) return;
     setAnalysisResult(pendingResult);
+    setResultRevealCount(0);
     setStage('results');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [stage, processingDone, pendingResult]);
+
+  useEffect(() => {
+    if (stage !== 'results' || !analysisResult) return;
+    let cancelled = false;
+    const startReveal = async () => {
+      await delay(380);
+      const totalSections = 6;
+      for (let index = 1; index <= totalSections; index += 1) {
+        if (cancelled) return;
+        setResultRevealCount(index);
+        if (index < totalSections) {
+          await delay(RESULT_REVEAL_INTERVAL_MS);
+        }
+      }
+    };
+    void startReveal();
+    return () => {
+      cancelled = true;
+    };
+  }, [stage, analysisResult]);
 
   useEffect(() => {
     if (stage !== 'processing' || !processingDone || !analysisError) return;
@@ -201,6 +245,7 @@ const Index = () => {
                   setPendingResult(null);
                   setAnalysisError(null);
                   setProcessingDone(false);
+                  setResultRevealCount(0);
                 }}
                 className="text-xs text-muted-foreground hover:text-primary transition-colors font-semibold"
               >
@@ -342,17 +387,29 @@ const Index = () => {
             </div>
             {analysisResult && (
               <>
-                <OpportunityCards opportunities={analysisResult.opportunities} />
-                <KolCards
-                  kols={analysisResult.kols}
-                  formData={formData}
-                  sessionId={analysisSessionId}
-                  onRefined={handleKolRefined}
-                />
-                <AudienceCharts audience={analysisResult.audience} />
-                <CampaignContentSection campaign={analysisResult.campaign} />
-                <PushStatus />
-                <EmailCapture formData={formData} sourceMode={leadSourceMode} />
+                <ResultReveal show={resultRevealCount >= 1}>
+                  <OpportunityCards opportunities={analysisResult.opportunities} />
+                </ResultReveal>
+                <ResultReveal show={resultRevealCount >= 2}>
+                  <KolCards
+                    kols={analysisResult.kols}
+                    formData={formData}
+                    sessionId={analysisSessionId}
+                    onRefined={handleKolRefined}
+                  />
+                </ResultReveal>
+                <ResultReveal show={resultRevealCount >= 3}>
+                  <AudienceCharts audience={analysisResult.audience} />
+                </ResultReveal>
+                <ResultReveal show={resultRevealCount >= 4}>
+                  <CampaignContentSection campaign={analysisResult.campaign} />
+                </ResultReveal>
+                <ResultReveal show={resultRevealCount >= 5}>
+                  <PushStatus />
+                </ResultReveal>
+                <ResultReveal show={resultRevealCount >= 6}>
+                  <EmailCapture formData={formData} sourceMode={leadSourceMode} />
+                </ResultReveal>
               </>
             )}
           </motion.main>

@@ -31,6 +31,8 @@ type LocalStepId =
   | 'matching'
   | 'kol_results';
 
+type ConfirmableStepId = 'food_format' | 'pet_type' | 'core_claims';
+
 type LocalStep = {
   id: LocalStepId;
   inputType: 'url' | 'select' | 'multi-select' | 'loading' | 'kol-cards';
@@ -308,6 +310,7 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
   const [previewKols, setPreviewKols] = useState<KolProfile[]>([]);
   const [urlInput, setUrlInput] = useState('');
   const [multiSelection, setMultiSelection] = useState<string[]>([]);
+  const [manualOverrideSteps, setManualOverrideSteps] = useState<ConfirmableStepId[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -318,6 +321,62 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentStep = stepConfig[currentStepId];
+
+  const getSingleLabel = useCallback((stepId: 'food_format' | 'pet_type', value: string) => {
+    return stepConfig[stepId].options?.find(option => option.value === value)?.label ?? value;
+  }, [stepConfig]);
+
+  const getClaimLabels = useCallback((values: string[]) => {
+    return values
+      .map(value => stepOptions.core_claims.find(option => option.value === value)?.label ?? value)
+      .filter(Boolean);
+  }, [stepOptions.core_claims]);
+
+  const getConfirmPrompt = useCallback((stepId: ConfirmableStepId) => {
+    if (stepId === 'food_format') {
+      return `I read the food format as ${getSingleLabel('food_format', formData.food_format)}. Do you want me to keep that?`;
+    }
+    if (stepId === 'pet_type') {
+      return `I read the target pet type as ${getSingleLabel('pet_type', formData.pet_type)}. Want me to keep that?`;
+    }
+    const labels = getClaimLabels(formData.core_claims);
+    return `I pulled these core claims from the product page: ${labels.join(', ')}. Want me to keep them?`;
+  }, [formData.core_claims, formData.food_format, formData.pet_type, getClaimLabels, getSingleLabel]);
+
+  const shouldConfirmInference = useCallback((stepId: LocalStepId) => {
+    if (!['food_format', 'pet_type', 'core_claims'].includes(stepId)) {
+      return false;
+    }
+    if (manualOverrideSteps.includes(stepId as ConfirmableStepId)) {
+      return false;
+    }
+    if (stepId === 'core_claims') {
+      return formData.core_claims.length > 0;
+    }
+    return Boolean(formData[stepId as 'food_format' | 'pet_type']);
+  }, [formData, manualOverrideSteps]);
+
+  const getStepPrompt = useCallback((stepId: LocalStepId) => {
+    if (stepId === 'food_format') {
+      return shouldConfirmInference('food_format') ? getConfirmPrompt('food_format') : t('chatFoodFormat');
+    }
+    if (stepId === 'pet_type') {
+      return shouldConfirmInference('pet_type') ? getConfirmPrompt('pet_type') : t('chatPetType');
+    }
+    if (stepId === 'core_claims') {
+      return shouldConfirmInference('core_claims') ? getConfirmPrompt('core_claims') : t('chatCoreClaims');
+    }
+    if (stepId === 'budget_band') return t('chatBudgetBand');
+    if (stepId === 'preferred_platforms') return t('chatPlatforms');
+    return '';
+  }, [getConfirmPrompt, shouldConfirmInference, t]);
+
+  const getDetectedValues = useCallback((stepId: ConfirmableStepId) => {
+    if (stepId === 'core_claims') {
+      return getClaimLabels(formData.core_claims);
+    }
+    return [getSingleLabel(stepId, formData[stepId] as string)];
+  }, [formData, getClaimLabels, getSingleLabel]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -337,6 +396,21 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
       })),
     ]);
   }, []);
+
+  const advanceFromConfirmedStep = useCallback((stepId: ConfirmableStepId) => {
+    if (stepId === 'food_format') {
+      addAgentMessages([getStepPrompt('pet_type')]);
+      setCurrentStepId('pet_type');
+      return;
+    }
+    if (stepId === 'pet_type') {
+      addAgentMessages([getStepPrompt('core_claims')]);
+      setCurrentStepId('core_claims');
+      return;
+    }
+    addAgentMessages([getStepPrompt('budget_band')]);
+    setCurrentStepId('budget_band');
+  }, [addAgentMessages, getStepPrompt]);
 
   const addUserMessage = useCallback((content: string) => {
     setMessages(prev => [
@@ -489,7 +563,7 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
             facts={[formatLabel, petTypeLabel, ...claimLabels].filter(Boolean)}
           />,
         ] : []),
-        t('chatFoodFormat'),
+        getStepPrompt('food_format'),
       ], 650);
       setCurrentStepId('food_format');
 
@@ -529,13 +603,13 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
     setMultiSelection([]);
 
     if (currentStepId === 'food_format') {
-      addAgentMessages([t('chatPetType')]);
+      addAgentMessages([getStepPrompt('pet_type')]);
       setCurrentStepId('pet_type');
       return;
     }
 
     if (currentStepId === 'pet_type') {
-      addAgentMessages([t('chatCoreClaims')]);
+      addAgentMessages([getStepPrompt('core_claims')]);
       setCurrentStepId('core_claims');
       return;
     }
@@ -560,7 +634,7 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
     setMultiSelection([]);
 
     if (currentStepId === 'core_claims') {
-      addAgentMessages([t('chatBudgetBand')]);
+      addAgentMessages([getStepPrompt('budget_band')]);
       setCurrentStepId('budget_band');
       return;
     }
@@ -605,6 +679,26 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
 
   const handleViewReport = () => {
     onComplete({ formData, sessionId });
+  };
+
+  const handleConfirmInference = (stepId: ConfirmableStepId) => {
+    if (stepId === 'core_claims') {
+      addUserMessage(getClaimLabels(formData.core_claims).join(', '));
+    } else {
+      const label = getSingleLabel(stepId, formData[stepId] as string);
+      addUserMessage(label);
+    }
+    advanceFromConfirmedStep(stepId);
+  };
+
+  const handleEditInference = (stepId: ConfirmableStepId) => {
+    setManualOverrideSteps(prev => (prev.includes(stepId) ? prev : [...prev, stepId]));
+    if (stepId === 'core_claims') {
+      setMultiSelection(formData.core_claims);
+    }
+    addAgentMessages([
+      stepId === 'core_claims' ? 'No problem — pick the claims you want to keep.' : 'No problem — choose the option that fits better.',
+    ]);
   };
 
   const showInput =
@@ -722,6 +816,39 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
             )}
 
             {currentStep.inputType === 'select' && currentStep.options && (
+              shouldConfirmInference(currentStepId) ? (
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
+                      Detected
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {getDetectedValues(currentStepId as ConfirmableStepId).map(value => (
+                        <span
+                          key={value}
+                          className="rounded-full border border-primary/25 bg-background/80 px-3 py-1 text-[12px] font-semibold text-foreground"
+                        >
+                          {value}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      onClick={() => handleConfirmInference(currentStepId as ConfirmableStepId)}
+                      className="px-4 py-2 rounded-xl text-sm font-medium bg-primary/15 text-primary border border-primary/40 hover:bg-primary/20 transition-all"
+                    >
+                      Keep detected answer
+                    </button>
+                    <button
+                      onClick={() => handleEditInference(currentStepId as ConfirmableStepId)}
+                      className="px-4 py-2 rounded-xl text-sm font-medium bg-secondary/60 text-secondary-foreground border border-border/60 hover:border-primary/30 transition-all"
+                    >
+                      Change it
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <div className="flex flex-wrap gap-2 justify-center">
                 {currentStep.options.map(opt => (
                   <button
@@ -733,9 +860,43 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
                   </button>
                 ))}
               </div>
+              )
             )}
 
             {currentStep.inputType === 'multi-select' && currentStep.options && (
+              shouldConfirmInference(currentStepId) ? (
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
+                      Detected
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {getDetectedValues('core_claims').map(value => (
+                        <span
+                          key={value}
+                          className="rounded-full border border-primary/25 bg-background/80 px-3 py-1 text-[12px] font-semibold text-foreground"
+                        >
+                          {value}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      onClick={() => handleConfirmInference('core_claims')}
+                      className="px-4 py-2 rounded-xl text-sm font-medium bg-primary/15 text-primary border border-primary/40 hover:bg-primary/20 transition-all"
+                    >
+                      Keep detected claims
+                    </button>
+                    <button
+                      onClick={() => handleEditInference('core_claims')}
+                      className="px-4 py-2 rounded-xl text-sm font-medium bg-secondary/60 text-secondary-foreground border border-border/60 hover:border-primary/30 transition-all"
+                    >
+                      Edit claims
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-2 justify-center">
                   {currentStep.options.map(opt => {
@@ -779,6 +940,7 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
                   </motion.div>
                 )}
               </div>
+              )
             )}
           </div>
         </motion.div>

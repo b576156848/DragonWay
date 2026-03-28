@@ -4,6 +4,8 @@ import { Send, Loader2, ArrowRight, ExternalLink, Users, Heart, DollarSign } fro
 import { Input } from '@/components/ui/input';
 import { FormData, KolProfile } from '@/data/types';
 import {
+  isKnownFastUrl,
+  normalizeFormDataForApi,
   quickChatStart,
   quickChatTurn,
   quickMatchPreview,
@@ -445,7 +447,8 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
     setIsBusy(true);
 
     try {
-      const ensuredSessionId = await ensureSessionId();
+      const knownFastUrl = isKnownFastUrl(value);
+      const ensuredSessionId = knownFastUrl ? (sessionId ?? 'pending') : await ensureSessionId();
       const [response] = await Promise.all([
         quickChatTurn({
           session_id: ensuredSessionId,
@@ -460,7 +463,9 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
         return;
       }
 
-      setSessionId(response.session_id);
+      if (response.session_id && response.session_id !== 'pending') {
+        setSessionId(response.session_id);
+      }
       setFormData(prev => ({
         ...prev,
         product_url: value,
@@ -549,18 +554,21 @@ const ChatAgent = ({ onComplete }: ChatAgentProps) => {
     setIsBusy(true);
 
     try {
+      const startedAt = Date.now();
+      const normalizedFormData = normalizeFormDataForApi(nextFormData);
       const response = await quickMatchPreview({
         session_id: sessionId ?? undefined,
-        form_data: nextFormData,
+        form_data: normalizedFormData,
         source: 'quick_chat',
       });
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 2000) {
+        await delay(2000 - elapsed);
+      }
       setSessionId(response.session_id);
       setPreviewKols(response.top_kols);
-      await playAgentSequence([
-        response.summary,
-        t('chatKolResults'),
-      ], 700);
       setCurrentStepId('kol_results');
+      addAgentMessages([response.summary]);
     } catch (error) {
       addAgentMessages([
         error instanceof Error ? error.message : 'I could not match creators for this product right now.',

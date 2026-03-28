@@ -64,11 +64,12 @@ class NewAAdapter:
 
     def quick_match_preview(self, payload: QuickMatchRequest) -> QuickMatchResponse:
         session_id = self.sessions.ensure_session(payload.session_id, source_mode="quick")
-        questionnaire = form_to_questionnaire(payload.form_data)
-        product = self._resolve_product(session_id, payload.form_data)
+        form_data = self._normalize_form_data(payload.form_data)
+        questionnaire = form_to_questionnaire(form_data)
+        product = self._resolve_product(session_id, form_data)
         matches = self.matcher.rank(questionnaire, product, limit=3, enrich=False)
         top_kols = [match_to_kol_profile(match) for match in matches]
-        audience = aggregate_audience(top_kols, payload.form_data)
+        audience = aggregate_audience(top_kols, form_data)
         summary = self._preview_summary(product, top_kols)
 
         response = QuickMatchResponse(
@@ -80,7 +81,7 @@ class NewAAdapter:
         self.sessions.update_session(
             session_id,
             current_step="previewed",
-            form_data_json=payload.form_data.model_dump(),
+            form_data_json=form_data.model_dump(),
             product_json=product.model_dump(),
             preview_kols_json=[item.model_dump() for item in top_kols],
             preview_audience_json=audience.model_dump(),
@@ -89,8 +90,9 @@ class NewAAdapter:
 
     def quick_refine(self, payload: QuickRefineRequest) -> QuickRefineResponse:
         session_id = self.sessions.ensure_session(payload.session_id, source_mode="quick")
-        questionnaire = form_to_questionnaire(payload.form_data)
-        product = self._resolve_product(session_id, payload.form_data)
+        form_data = self._normalize_form_data(payload.form_data)
+        questionnaire = form_to_questionnaire(form_data)
+        product = self._resolve_product(session_id, form_data)
         ranked_matches = self.matcher.rank(questionnaire, product, limit=None, enrich=False)
 
         preference = payload.preference or self._preference_from_answers(payload.answers or {})
@@ -102,7 +104,7 @@ class NewAAdapter:
         )
 
         refined_kols = [match_to_kol_profile(match) for match in refined_matches]
-        refined_audience = aggregate_audience(refined_kols, payload.form_data)
+        refined_audience = aggregate_audience(refined_kols, form_data)
         summary = self._refine_summary(preference, refined_kols)
 
         response = QuickRefineResponse(
@@ -114,7 +116,7 @@ class NewAAdapter:
         self.sessions.update_session(
             session_id,
             current_step="refined",
-            form_data_json=payload.form_data.model_dump(),
+            form_data_json=form_data.model_dump(),
             product_json=product.model_dump(),
             refined_kols_json=[item.model_dump() for item in refined_kols],
             refined_audience_json=refined_audience.model_dump(),
@@ -122,26 +124,27 @@ class NewAAdapter:
         return response
 
     def submit_analysis(self, payload: AnalysisSubmitRequest) -> AnalysisSubmitResponse:
+        form_data = self._normalize_form_data(payload.form_data)
         session = self.sessions.get_session(payload.session_id) if payload.session_id else None
-        product = self._resolve_product(payload.session_id, payload.form_data)
+        product = self._resolve_product(payload.session_id, form_data)
 
         if payload.source == "quick_chat" and session and session.refined_kols_json:
             kols = [match_to_front_kol(item) for item in _load_json(session.refined_kols_json)]
-            audience = audience_from_json(session.refined_audience_json, payload.form_data, kols)
+            audience = audience_from_json(session.refined_audience_json, form_data, kols)
         elif payload.source == "quick_chat" and session and session.preview_kols_json:
             kols = [match_to_front_kol(item) for item in _load_json(session.preview_kols_json)]
-            audience = audience_from_json(session.preview_audience_json, payload.form_data, kols)
+            audience = audience_from_json(session.preview_audience_json, form_data, kols)
         else:
-            questionnaire = form_to_questionnaire(payload.form_data)
+            questionnaire = form_to_questionnaire(form_data)
             matches = self.matcher.rank(questionnaire, product, limit=3, enrich=False)
             kols = [match_to_kol_profile(match) for match in matches]
-            audience = aggregate_audience(kols, payload.form_data)
+            audience = aggregate_audience(kols, form_data)
 
         result = AnalysisResult(
-            opportunities=build_opportunities(payload.form_data, product),
+            opportunities=build_opportunities(form_data, product),
             kols=kols,
             audience=audience,
-            campaign=build_campaign_content(payload.form_data, product, kols),
+            campaign=build_campaign_content(form_data, product, kols),
         )
         return AnalysisSubmitResponse(result=result, source=payload.source)
 
@@ -478,6 +481,16 @@ class NewAAdapter:
             timeline="1_month",
             special_constraints="",
         )
+
+    def _normalize_form_data(self, form_data: FormData) -> FormData:
+        updates: dict[str, Any] = {}
+        if not form_data.owner_city:
+            updates["owner_city"] = "any"
+        if not form_data.owner_price:
+            updates["owner_price"] = "mid_high"
+        if not updates:
+            return form_data
+        return form_data.model_copy(update=updates)
 
     def _session_form_data(self, session) -> FormData:
         if session.form_data_json:

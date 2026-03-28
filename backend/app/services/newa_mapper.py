@@ -32,8 +32,20 @@ SPENDING_LABELS = {
     "mid": "Mid (¥150–300/mo)",
 }
 
+VALID_OWNER_PETS = {"dog_owner", "cat_owner", "multi_pet"}
+VALID_OWNER_CITIES = {"tier1", "new_tier1", "tier2", "any"}
+VALID_OWNER_PRICES = {"high", "mid_high", "mid"}
+VALID_PREFERRED_PLATFORMS = {"xiaohongshu", "douyin"}
+VALID_KOL_TYPES = {"expert", "reviewer", "lifestyle", "micro_engaged", "mid_volume", "no_preference"}
+
 
 def form_to_questionnaire(form: FormData) -> QuestionnaireInput:
+    owner_pet = form.owner_pet if form.owner_pet in VALID_OWNER_PETS else "dog_owner"
+    owner_city = form.owner_city if form.owner_city in VALID_OWNER_CITIES else "any"
+    owner_price = form.owner_price if form.owner_price in VALID_OWNER_PRICES else "mid_high"
+    preferred_platforms = [platform for platform in form.preferred_platforms if platform in VALID_PREFERRED_PLATFORMS] or ["xiaohongshu"]
+    preferred_kol_type = form.preferred_kol_type if form.preferred_kol_type in VALID_KOL_TYPES else "no_preference"
+
     return QuestionnaireInput(
         product_url=form.product_url,
         food_format=form.food_format,  # type: ignore[arg-type]
@@ -42,14 +54,14 @@ def form_to_questionnaire(form: FormData) -> QuestionnaireInput:
         core_claims=form.core_claims,  # type: ignore[arg-type]
         primary_goal=form.primary_goal,  # type: ignore[arg-type]
         target_owner_profile=TargetOwnerProfile(
-            owner_pet=form.owner_pet,  # type: ignore[arg-type]
-            owner_city=form.owner_city,  # type: ignore[arg-type]
-            owner_price=form.owner_price,  # type: ignore[arg-type]
+            owner_pet=owner_pet,  # type: ignore[arg-type]
+            owner_city=owner_city,  # type: ignore[arg-type]
+            owner_price=owner_price,  # type: ignore[arg-type]
         ),
         brand_positioning=form.brand_positioning,  # type: ignore[arg-type]
-        preferred_platforms=form.preferred_platforms or ["xiaohongshu"],
+        preferred_platforms=preferred_platforms,
         content_preference=form.content_preference[:3] or ["ingredient_review", "dog_reaction"],
-        preferred_kol_type=form.preferred_kol_type,  # type: ignore[arg-type]
+        preferred_kol_type=preferred_kol_type,  # type: ignore[arg-type]
         budget_band=form.budget_band or "10k_30k",  # type: ignore[arg-type]
         timeline=form.timeline or "1_month",  # type: ignore[arg-type]
         special_constraints=form.special_constraints or "",

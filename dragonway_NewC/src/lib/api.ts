@@ -149,8 +149,8 @@ function createDefaultFormData(productUrl: string): FormData {
     core_claims: [],
     primary_goal: 'find_kol',
     owner_pet: 'dog_owner',
-    owner_city: '',
-    owner_price: '',
+    owner_city: 'any',
+    owner_price: 'mid_high',
     brand_positioning: 'premium_import',
     preferred_platforms: [],
     content_preference: ['ingredient_review', 'dog_reaction'],
@@ -165,6 +165,10 @@ function getKnownFastUrlProfile(url: string): CachedUrlProfile | null {
   return KNOWN_FAST_URLS[normalizeKnownUrl(url)] ?? null;
 }
 
+export function isKnownFastUrl(url: string): boolean {
+  return getKnownFastUrlProfile(url) !== null;
+}
+
 function delayedResolve<T>(value: T, ms: number): Promise<T> {
   return new Promise(resolve => {
     window.setTimeout(() => resolve(value), ms);
@@ -174,10 +178,25 @@ function delayedResolve<T>(value: T, ms: number): Promise<T> {
 export function normalizeFormDataForApi(formData: FormData): FormData {
   return {
     ...formData,
+    product_url: formData.product_url.trim(),
+    life_stage: formData.life_stage.length > 0 ? formData.life_stage : ['all_life'],
+    primary_goal: formData.primary_goal || 'find_kol',
+    owner_pet: formData.owner_pet || 'dog_owner',
+    owner_city: formData.owner_city || 'any',
+    owner_price: formData.owner_price || 'mid_high',
+    brand_positioning: formData.brand_positioning || 'premium_import',
+    preferred_platforms: formData.preferred_platforms.length > 0 ? formData.preferred_platforms : ['xiaohongshu'],
+    content_preference:
+      formData.content_preference.length > 0
+        ? formData.content_preference.slice(0, 3)
+        : ['ingredient_review', 'dog_reaction'],
     preferred_kol_type:
       formData.preferred_kol_type === 'lifestyle_creator'
         ? 'lifestyle'
-        : formData.preferred_kol_type,
+        : formData.preferred_kol_type || 'no_preference',
+    budget_band: formData.budget_band || '10k_30k',
+    timeline: formData.timeline || '1_month',
+    special_constraints: formData.special_constraints || '',
   };
 }
 

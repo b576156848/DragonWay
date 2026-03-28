@@ -19,6 +19,8 @@ import EmailCapture from '@/components/dragonway/EmailCapture';
 
 type Stage = 'input' | 'processing' | 'results';
 
+const delay = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
+
 const SAMPLE_PRODUCT_URL = 'https://tomlinsonsdev.myshopify.com/products/zignature-catfish-dog-food';
 
 const SAMPLE_DETAILED_FORM_DATA: FormData = {
@@ -123,11 +125,16 @@ const Index = () => {
     setProcessingDone(false);
     setStage('processing');
     try {
+      const startedAt = Date.now();
       const response = await submitAnalysis({
         session_id: sessionId ?? undefined,
         form_data: normalizedFormData,
         source,
       });
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 5000) {
+        await delay(5000 - elapsed);
+      }
       setPendingResult(response.result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to generate analysis.';
